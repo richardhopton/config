@@ -1,0 +1,39 @@
+[push]
+  default = simple
+
+[diff]
+  renames = copies
+  tool = bc3
+
+[difftool]
+  prompt = false
+  keepBackup = false
+
+[merge]
+  tool = bc3
+
+[mergetool]
+  bc3=trustExitCode
+  keepBackup=false
+
+[alias]
+  bn = "!git rev-parse --abbrev-ref HEAD"
+  pub = "!git push -u origin $(git bn)"
+  pr = pull --rebase
+  cm = commit -m
+  cma = commit -am
+  co = checkout
+  com = checkout master
+  cob = checkout -b
+  new = log master.. --reverse
+  ca = commit --amend -C HEAD
+  rbc = rebase --continue
+  rba = rebase --abort
+  wip = !git add . && git commit -m WIP
+  rom = rebase origin/master
+  romi = rebase origin/master --interactive --autosquash
+  d = diff
+  ds = diff --staged
+  pff = pull --ff-only
+  rmx = "!sh -c 'git ls-files --deleted -z $1 | xargs -0 git rm' -"
+  pushf = push --force-with-lease
