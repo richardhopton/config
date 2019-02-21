@@ -1,3 +1,7 @@
+[user]
+  name = Richard Hopton
+  email = richard@thehoptons.co.uk
+
 [push]
   default = simple
 
@@ -29,10 +33,10 @@
   ca = commit --amend -C HEAD
   rbc = rebase --continue
   rba = rebase --abort
+  rbs = rebase --skip
   rbi = rebase --interactive --autosquash
-  wip = !git add . && git commit -m WIP
-  rom = rebase origin/master
-  romi = rebase --interactive --autosquash origin/master
+  wip = !git add . && git cm WIP
+  romi = !git rbi origin/master
   d = diff
   ds = diff --staged
   pff = pull --ff-only

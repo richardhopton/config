@@ -1,0 +1,42 @@
+alias gs="git status"
+alias cd..="cd .."
+alias docker-clean='docker container prune --force && docker image prune --all --force'
+
+function rmb {
+  current_branch=$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+  if [ "$current_branch" != "master" ]; then
+    echo "WARNING: You are on branch $current_branch, NOT master."
+  else
+    echo "Updating master branch..."
+    git pull --ff-only --quiet
+
+    echo "Fetching merged branches..."
+    git remote prune origin
+    remote_branches=$(git branch -r --merged | grep -v '/master$')
+    local_branches=$(git branch --merged | grep -v 'master$')
+    if [ -z "$remote_branches" ] && [ -z "$local_branches" ]; then
+      echo "No existing branches have been merged into $current_branch."
+    else
+      if [ -n "$local_branches" ]; then
+        echo "This will remove the following local branches:"
+        echo "$local_branches"
+        echo "Continue? (y/n): " && export choice=`read -e n 1`
+        echo
+        if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+          # Remove local branches
+          git branch -d `echo "$local_branches" | sed 's/origin\///g' | tr -d '\n'`
+        fi
+      fi
+      if [ -n "$remote_branches" ]; then
+        echo "This will remove the following remote branches:"
+        echo "$remote_branches"
+        echo "Continue? (y/n): " && export choice=`read -e n 1`
+        echo
+        if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+          git push origin `echo "$remote_branches" | sed 's/origin\//:/g' | tr -d '\n'`
+          fi
+      fi
+    fi
+  fi
+}
+
