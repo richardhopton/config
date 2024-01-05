@@ -1,42 +1,79 @@
 alias gs="git status"
 alias cd..="cd .."
 alias docker-clean='docker container prune --force && docker image prune --all --force'
+alias md=take
+alias got="git"
 
-function rmb {
-  current_branch=$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
-  if [ "$current_branch" != "master" ]; then
-    echo "WARNING: You are on branch $current_branch, NOT master."
+rmb () {
+  current_branch=$(git bn)
+  main_branch=$(git main)
+  if [ "$current_branch" != "$main_branch" ]; then
+    echo "WARNING: You are on branch $current_branch, NOT main."
   else
-    echo "Updating master branch..."
-    git pull --ff-only --quiet
-
+    echo "Updating main branch..."
+    git pff --quiet
     echo "Fetching merged branches..."
     git remote prune origin
-    remote_branches=$(git branch -r --merged | grep -v '/master$')
-    local_branches=$(git branch --merged | grep -v 'master$')
-    if [ -z "$remote_branches" ] && [ -z "$local_branches" ]; then
-      echo "No existing branches have been merged into $current_branch."
+    local_branches=$(git branch --merged | grep -v "$main_branch$")
+    remote_branches=$(git branch -r --merged | grep -v "/$main_branch$")
+    if [ -z "$remote_branches" ]; then
+      echo "No remote branches have been merged into $current_branch."
     else
-      if [ -n "$local_branches" ]; then
-        echo "This will remove the following local branches:"
-        echo "$local_branches"
-        echo "Continue? (y/n): " && export choice=`read -e n 1`
-        echo
-        if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
-          # Remove local branches
-          git branch -d `echo "$local_branches" | sed 's/origin\///g' | tr -d '\n'`
-        fi
+      echo "Do you want to remove the following remote branches:"
+      echo "$remote_branches"
+      echo "Continue? (y/n/p): " && export choice=`read -e n 1`
+      echo
+      if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+        git push origin `echo "$remote_branches" | sed 's/origin\//:/g' | tr -d '\n'`
       fi
-      if [ -n "$remote_branches" ]; then
-        echo "This will remove the following remote branches:"
-        echo "$remote_branches"
-        echo "Continue? (y/n): " && export choice=`read -e n 1`
-        echo
-        if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
-          git push origin `echo "$remote_branches" | sed 's/origin\//:/g' | tr -d '\n'`
+      if [ "$choice" '==' "p" ] || [ "$choice" '==' "P" ]; then
+        echo "Pick branches to delete:"
+        declare -a branches
+        while IFS= read -r branch; do; branches+=$branch; done <<< "$remote_branches"
+        for branch in "${branches[@]}"; do
+          echo "$branch? (y/n):" && export choice=`read -e n 1`
+          if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+            git push origin `echo "$branch" | sed 's/origin\///g'`
           fi
+        done
+      fi
+    fi
+    if [ -z "$local_branches" ]; then
+      echo "No local branches have been merged into $current_branch."
+    else
+      echo "Do you want to remove the following local branches:"
+      echo "$local_branches"
+      echo "Continue? (y/n): " && export choice=`read -e n 1`
+      echo
+      if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+        git branch -d `echo "$local_branches" | sed 's/origin\///g' | tr -d '\n'`
+      fi
+    fi
+    pruned_branches=$(git branch -vv | awk '/: gone]/{print $1}')
+    if [ -z "$pruned_branches" ]; then
+      echo "No local branches have been pruned."
+    else
+      echo "Do you want to remove the following pruned local branches:"
+      echo "$pruned_branches"
+      echo "Continue? (y/n): " && export choice=`read -e n 1`
+      echo
+      if [ "$choice" '==' "y" ] || [ "$choice" '==' "Y" ]; then
+        git branch -D `echo "$pruned_branches" | xargs echo | tr -d '\n'`
       fi
     fi
   fi
 }
 
+autoload -U add-zsh-hook
+load-nvmrc() {
+  if [[ -f .nvmrc && -r .nvmrc ]]; then
+    if [[ $(nvm version) != $(cat .nvmrc) ]]; then
+      nvm use
+    fi
+  elif [[ $(nvm version) != $(nvm version default)  ]]; then
+    echo "Reverting to nvm default version"
+    nvm use default
+  fi
+}
+add-zsh-hook chpwd load-nvmrc
+load-nvmrc
